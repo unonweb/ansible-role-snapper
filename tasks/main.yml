@@ -12,19 +12,19 @@
       state: present
     check_mode: true # outputs "changed": false || "changed": true
     ignore_errors: true
-    register: _apt_snapper
+    register: __snapper_apt_check
 
   # assert
   - name: Check conditions for snapper
     ansible.builtin.assert:
       that:
-      - _apt_snapper.changed == false # no change -> already installed
+      - __snapper_apt_check.changed == false # no change -> already installed
 
   # snapper add config
-  - when: snapper.configs.add | length > 0
-    name: Copy {{ snapper.configs.add }} to /etc/snapper/configs
+  - when: snapper_config_add | length > 0
+    name: Copy {{ snapper_config_add }} to /etc/snapper/configs
     become: true
-    loop: "{{ snapper.configs.add }}"
+    loop: "{{ snapper_config_add }}"
     ansible.builtin.copy:
       src: "configs/{{ item }}"
       dest: "/etc/snapper/configs/{{ item.split('/')[-1] }}" # fk/opt => opt
@@ -33,10 +33,10 @@
       mode: u=rw,g=,o=
 
   # snapper rm config
-  - when: snapper.configs.rm | length > 0
-    name: Remove {{ snapper.configs.rm }} to /etc/snapper/configs
+  - when: snapper_config_remove | length > 0
+    name: Remove {{ snapper_config_remove }} to /etc/snapper/configs
     become: true
-    loop: "{{ snapper.configs.rm }}"
+    loop: "{{ snapper_config_remove }}"
     ansible.builtin.file:
       path: "/etc/snapper/configs/{{ item.split('/')[-1] }}" # fk/opt => opt
       state: absent
@@ -47,7 +47,7 @@
   # apt pre post mechanism
   - block:
       
-    - when: snapper.apt.pre_post.state == "absent"
+    - when: snapper_apt_prepost_state == "absent"
       name: Remove /etc/apt/apt.conf.d/80snapper
       become: true
       ansible.builtin.file:

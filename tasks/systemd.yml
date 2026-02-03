@@ -1,9 +1,9 @@
-# cp
-- when: snapper.systemd.cp | length > 0
-  name: Copy {{ snapper.systemd.cp }}
+# snapper_systemd_copy
+- when: snapper_systemd_copy | length > 0
+  name: Copy {{ snapper_systemd_copy }}
   become: true
   notify: systemctl --system daemon-reload
-  loop: "{{ snapper.systemd.cp }}"
+  loop: "{{ snapper_systemd_copy }}"
   ansible.builtin.copy:
     src: "{{ item }}"
     dest: "/etc/systemd/system/{{ item.split('/')[-1] }}"
@@ -11,23 +11,36 @@
     group: root
     mode: u=rw,g=r,o=r
 
+# snapper_systemd_template
+- when: snapper_systemd_template | length > 0
+  name: Template systemd system unit files {{ snapper_systemd_template }}
+  become: true
+  notify: systemctl --system daemon-reload
+  loop: "{{ snapper_systemd_template }}"
+  ansible.builtin.template:
+    src: "{{ role_path }}/files/{{ un_install_app }}/{{ item }}"
+    dest: "/etc/systemd/system/{{ item.split('/')[-1].replace('.j2', '') }}" # systemd/un.machines.service.j2 -> un.machines.service.j2 -> systemd/un.machines.service
+    owner: root
+    group: root
+    mode: u=rw,g=r,o=r
+
 # reset
-- when: snapper.systemd.reset | length > 0
-  name: Reset overrides {{ snapper.systemd.reset }}
-  loop: "{{ snapper.systemd.reset }}"
+- when: snapper_systemd_reset | length > 0
+  name: Reset overrides {{ snapper_systemd_reset }}
+  loop: "{{ snapper_systemd_reset }}"
   become: true
   ansible.builtin.file:
     path: "/etc/systemd/system/{{ item }}.d"
     state: absent
 
 # overrides
-- when: snapper.systemd.overrides | length > 0
+- when: snapper_systemd_overrides | length > 0
   block:
 
   # mkdir overrides
   - name: Mkdir in /etc/systemd/system/...
     become: true
-    loop: "{{ snapper.systemd.overrides }}"
+    loop: "{{ snapper_systemd_overrides }}"
     ansible.builtin.file:
       path: "/etc/systemd/system/{{ item | dirname }}"
       state: directory
@@ -36,10 +49,10 @@
       mode: o=rwx,g=rx,o=rx
 
   # cp overrides
-  - name: Copy {{ snapper.systemd.overrides }}
+  - name: Copy {{ snapper_systemd_overrides }}
     become: true
     notify: systemctl --system daemon-reload
-    loop: "{{ snapper.systemd.overrides }}"
+    loop: "{{ snapper_systemd_overrides }}"
     ansible.builtin.copy:
       src: "{{ item }}"
       dest: "/etc/systemd/system/{{ item }}"
@@ -49,37 +62,41 @@
       mode: u=rw,g=r,o=r
 
 # enable
-- when: snapper.systemd.enable | length > 0
-  name: systemctl enable {{ snapper.systemd.enable }}
+- when: snapper_systemd_enable | length > 0
+  name: systemctl enable {{ snapper_systemd_enable }}
   become: true
-  loop: "{{ snapper.systemd.enable }}"
+  loop: "{{ snapper_systemd_enable }}"
   ansible.builtin.systemd_service:
+    scope: system
     name: "{{ item }}"
     enabled: true
 
 # disable
-- when: snapper.systemd.disable | length > 0
-  name: systemctl disable {{ snapper.systemd.disable }}
+- when: snapper_systemd_disable | length > 0
+  name: systemctl disable {{ snapper_systemd_disable }}
   become: true
-  loop: "{{ snapper.systemd.disable }}"
+  loop: "{{ snapper_systemd_disable }}"
   ansible.builtin.systemd_service:
+    scope: system
     name: "{{ item }}"
     enabled: false
 
 # start
-- when: snapper.systemd.start | length > 0
-  name: systemctl start {{ snapper.systemd.start }}
+- when: snapper_systemd_start | length > 0
+  name: systemctl start {{ snapper_systemd_start }}
   become: true
-  loop: "{{ snapper.systemd.start }}"
+  loop: "{{ snapper_systemd_start }}"
   ansible.builtin.systemd_service:
+    scope: system
     name: "{{ item }}"
     state: started
 
 # stop
-- when: snapper.systemd.stop | length > 0
-  name: systemctl stop {{ snapper.systemd.stop }}
+- when: snapper_systemd_stop | length > 0
+  name: systemctl stop {{ snapper_systemd_stop }}
   become: true
-  loop: "{{ snapper.systemd.stop }}"
+  loop: "{{ snapper_systemd_stop }}"
   ansible.builtin.systemd_service:
+    scope: system
     name: "{{ item }}"
     state: stopped
