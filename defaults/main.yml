@@ -2,6 +2,7 @@
 snapper_config_add: []
 snapper_config_remove: []
 snapper_apt_prepost_state: absent
+snapper_systemd_scope: system
 snapper_systemd_copy: []
 snapper_systemd_template: []
 snapper_systemd_reset: []
